@@ -5,6 +5,8 @@ import com.cgi.orderapp.order_service.clients.ProductDTO;
 import com.cgi.orderapp.order_service.clients.UserClient;
 import com.cgi.orderapp.order_service.clients.UserDTO;
 import com.cgi.orderapp.order_service.entity.Order;
+import com.cgi.orderapp.order_service.exception.InsufficientStockException;
+import com.cgi.orderapp.order_service.exception.ResourceNotFoundException;
 import com.cgi.orderapp.order_service.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,13 +27,15 @@ public class OrderService {
     private ProductClient productClient;
 
     public Order placeOrder(Long userId, Long productId, Integer quantity) {
-        // 1. Validate user exists (throws if Feign call fails / 404s)
+        // 1. Validate user exists (Feign throws if user-service 404s)
         UserDTO user = userClient.getUserById(userId);
 
         // 2. Validate product exists and check stock
         ProductDTO product = productClient.getProductById(productId);
         if (product.getStockQuantity() < quantity) {
-            throw new RuntimeException("Insufficient stock for product: " + product.getName());
+            throw new InsufficientStockException(
+                    "Insufficient stock for product: " + product.getName()
+            );
         }
 
         // 3. Reduce stock in product-service
@@ -55,7 +59,9 @@ public class OrderService {
 
     public Order getOrderById(Long id) {
         return orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Order not found with id: " + id
+                ));
     }
 
     public Order cancelOrder(Long id) {

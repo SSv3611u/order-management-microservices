@@ -3,7 +3,9 @@ package com.cgi.orderapp.product_service.service;
 import com.cgi.orderapp.product_service.entity.Product;
 import com.cgi.orderapp.product_service.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -23,7 +25,10 @@ public class ProductService {
 
     public Product getProductById(Long id) {
         return productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Product not found with id: " + id
+                ));
     }
 
     public Product updateProduct(Long id, Product productDetails) {
@@ -40,7 +45,6 @@ public class ProductService {
         productRepository.delete(product);
     }
 
-    // Needed later when order-service places an order
     public void reduceStock(Long productId, int quantity) {
         Product product = getProductById(productId);
         if (product.getStockQuantity() < quantity) {
